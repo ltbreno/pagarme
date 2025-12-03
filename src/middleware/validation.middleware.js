@@ -42,6 +42,11 @@ const creditCardPaymentSchema = Joi.object({
   description: Joi.string().max(500).optional()
     .messages({
       'string.max': 'A descrição deve ter no máximo 500 caracteres'
+    }),
+
+  proposal_id: Joi.string().uuid().optional()
+    .messages({
+      'string.uuid': 'proposal_id deve ser um UUID válido'
     })
 });
 
@@ -93,6 +98,11 @@ const pixPaymentSchema = Joi.object({
   description: Joi.string().max(500).optional()
     .messages({
       'string.max': 'A descrição deve ter no máximo 500 caracteres'
+    }),
+
+  proposal_id: Joi.string().uuid().optional()
+    .messages({
+      'string.uuid': 'proposal_id deve ser um UUID válido'
     })
 });
 

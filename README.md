@@ -7,18 +7,72 @@ Backend Node.js para integração com a API da Pagar.me, focado em pagamentos co
 - ✅ Pagamentos com cartão de crédito
 - ✅ Pagamentos com PIX
 - ✅ Validação de dados
-- ✅ Persistência em PostgreSQL
+- ✅ Persistência em Supabase + PostgreSQL (dual-write)
 - ✅ Estrutura RESTful
 - ✅ Logging e tratamento de erros
+- ✅ Webhooks para notificações da Pagar.me
+- ✅ Gestão de clientes e recebedores
+- ✅ Transferências entre recebedores
 
 ## 🛠️ Tecnologias
 
 - **Node.js** - Runtime JavaScript
 - **Express.js** - Framework web
-- **PostgreSQL** - Banco de dados
+- **Supabase** - Banco de dados principal (PostgreSQL na nuvem)
+- **PostgreSQL** - Banco de dados local (backup)
 - **Pagar.me API v5** - Processamento de pagamentos
 - **Joi** - Validação de dados
 - **Axios** - Cliente HTTP
+
+## 🔷 Integração com Supabase
+
+Este backend utiliza **Supabase como banco de dados principal** para armazenar pagamentos, com PostgreSQL local servindo como backup.
+
+### Estratégia de Dual-Write
+
+1. **Supabase (Principal)**: Todos os pagamentos são salvos no Supabase primeiro
+2. **PostgreSQL (Backup)**: Dados são replicados no PostgreSQL local
+3. **Fallback Inteligente**: Se o Supabase falhar, o sistema continua funcionando com PostgreSQL
+4. **Leitura Prioritária**: Buscas são feitas no Supabase primeiro, com fallback para PostgreSQL
+
+### Configuração do Supabase
+
+Adicione as credenciais do Supabase no arquivo `.env`:
+
+```env
+SUPABASE_URL=https://sua-url.supabase.co
+SUPABASE_ANON_KEY=sua_chave_anonima_aqui
+```
+
+Para obter as credenciais:
+1. Acesse [Supabase Dashboard](https://supabase.com/dashboard)
+2. Vá em **Settings** → **API**
+3. Copie a **Project URL** e **anon/public key**
+
+### Mapeamento de Campos
+
+O backend faz o mapeamento automático entre os formatos:
+
+| Campo Interno | Campo Supabase | Descrição |
+|--------------|----------------|-----------|
+| `pagarme_id` | `pagarme_order_id` | ID do pedido na Pagar.me |
+| `amount` | `amount` e `total_amount` | Valor em centavos |
+| `payment_method` | `payment_method` | Método de pagamento |
+| `status` | `status` | Status do pagamento |
+| `pagarme_response.charges[0].id` | `pagarme_payment_id` | ID do pagamento |
+| `pagarme_response.charges[0].last_transaction.card.brand` | `card_brand` | Bandeira do cartão |
+| `pagarme_response.charges[0].last_transaction.card.last_four_digits` | `card_last_four_digits` | Últimos 4 dígitos |
+
+### Funcionamento sem Supabase
+
+O sistema funciona **normalmente sem o Supabase configurado**. Se as credenciais não estiverem no `.env`, apenas o PostgreSQL local será usado.
+
+### Documentação Detalhada
+
+Para mais informações sobre a integração com Supabase, consulte:
+- [SUPABASE_INTEGRATION.md](./SUPABASE_INTEGRATION.md) - Documentação completa da integração
+- [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md) - Configuração de webhooks
+- [EXAMPLES.md](./EXAMPLES.md) - Exemplos de uso da API
 
 ## 📦 Instalação
 
@@ -38,7 +92,11 @@ Edite o arquivo `.env` com suas configurações:
 PAGARME_API_KEY=sua-chave-api-aqui
 PAGARME_BASE_URL=https://api.pagar.me/core/v5
 
-# Banco PostgreSQL
+# Supabase (Principal)
+SUPABASE_URL=https://sua-url.supabase.co
+SUPABASE_ANON_KEY=sua_chave_anonima_aqui
+
+# Banco PostgreSQL (Backup)
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=pagarme_db

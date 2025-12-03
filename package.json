@@ -9,11 +9,17 @@
     "init-db": "node src/config/init-db.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["pagarme", "payment", "api", "nodejs"],
+  "keywords": [
+    "pagarme",
+    "payment",
+    "api",
+    "nodejs"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@supabase/supabase-js": "^2.86.0",
     "axios": "^1.13.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

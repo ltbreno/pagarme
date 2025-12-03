@@ -1,5 +1,6 @@
 const PaymentModel = require('../models/payment.model');
 const PagarmeService = require('../services/pagarme.service');
+const SupabaseService = require('../services/supabase.service');
 
 class PaymentController {
   /**
@@ -24,6 +25,7 @@ class PaymentController {
         customer_name: paymentData.customer_name,
         customer_email: paymentData.customer_email,
         customer_document: paymentData.customer_document,
+        proposal_id: paymentData.proposal_id, // Recebe do frontend
         pagarme_response: pagarmeOrder
       });
 
@@ -79,6 +81,7 @@ class PaymentController {
         customer_name: paymentData.customer_name,
         customer_email: paymentData.customer_email,
         customer_document: paymentData.customer_document,
+        proposal_id: paymentData.proposal_id, // Recebe do frontend
         pagarme_response: pagarmeOrder
       });
 
@@ -375,6 +378,25 @@ class PaymentController {
       await PaymentModel.updateStatus(payment.id, 'paid', orderData);
       console.log(`✅ Pagamento ${payment.id} atualizado para PAID`);
 
+      // Atualizar no Supabase usando proposal_id se disponível
+      // Pode vir do payment ou dos metadados do orderData
+      const proposalId = payment.proposal_id || orderData.metadata?.proposal_id;
+      
+      if (proposalId) {
+        try {
+          await SupabaseService.updatePaymentStatusByProposalId(
+            proposalId,
+            'paid',
+            orderData
+          );
+          console.log(`✅ Status atualizado no Supabase via proposal_id: ${proposalId}`);
+        } catch (error) {
+          console.error('⚠️ Erro ao atualizar Supabase por proposal_id:', error.message);
+        }
+      } else {
+        console.log('ℹ️ proposal_id não encontrado, atualização no Supabase será feita via pagarme_order_id');
+      }
+
       // Aqui você pode adicionar lógica adicional:
       // - Enviar email de confirmação
       // - Liberar produto/serviço
@@ -405,6 +427,24 @@ class PaymentController {
       await PaymentModel.updateStatus(payment.id, 'failed', orderData);
       console.log(`❌ Pagamento ${payment.id} atualizado para FAILED`);
 
+      // Atualizar no Supabase usando proposal_id se disponível
+      const proposalId = payment.proposal_id || orderData.metadata?.proposal_id;
+      
+      if (proposalId) {
+        try {
+          await SupabaseService.updatePaymentStatusByProposalId(
+            proposalId,
+            'failed',
+            orderData
+          );
+          console.log(`✅ Status atualizado no Supabase via proposal_id: ${proposalId}`);
+        } catch (error) {
+          console.error('⚠️ Erro ao atualizar Supabase por proposal_id:', error.message);
+        }
+      } else {
+        console.log('ℹ️ proposal_id não encontrado, atualização no Supabase será feita via pagarme_order_id');
+      }
+
       // Lógica adicional para falha:
       // - Notificar cliente
       // - Liberar estoque reservado
@@ -433,6 +473,25 @@ class PaymentController {
         if (payment) {
           await PaymentModel.updateStatus(payment.id, 'paid', chargeData);
           console.log(`✅ Pagamento ${payment.id} atualizado via charge.paid`);
+
+          // Atualizar no Supabase usando proposal_id se disponível
+          const proposalId = payment.proposal_id || chargeData.metadata?.proposal_id || chargeData.order?.metadata?.proposal_id;
+          
+          if (proposalId) {
+            try {
+              const SupabaseService = require('../services/supabase.service');
+              await SupabaseService.updatePaymentStatusByProposalId(
+                proposalId,
+                'paid',
+                chargeData
+              );
+              console.log(`✅ Status atualizado no Supabase via proposal_id: ${proposalId}`);
+            } catch (error) {
+              console.error('⚠️ Erro ao atualizar Supabase por proposal_id:', error.message);
+            }
+          } else {
+            console.log('ℹ️ proposal_id não encontrado, atualização no Supabase será feita via pagarme_order_id');
+          }
         }
       }
 
@@ -457,6 +516,25 @@ class PaymentController {
         if (payment && payment.status !== 'paid') {
           await PaymentModel.updateStatus(payment.id, 'pending', chargeData);
           console.log(`⏳ Pagamento ${payment.id} mantido como PENDING`);
+
+          // Atualizar no Supabase usando proposal_id se disponível
+          const proposalId = payment.proposal_id || chargeData.metadata?.proposal_id || chargeData.order?.metadata?.proposal_id;
+          
+          if (proposalId) {
+            try {
+              const SupabaseService = require('../services/supabase.service');
+              await SupabaseService.updatePaymentStatusByProposalId(
+                proposalId,
+                'pending',
+                chargeData
+              );
+              console.log(`✅ Status atualizado no Supabase via proposal_id: ${proposalId}`);
+            } catch (error) {
+              console.error('⚠️ Erro ao atualizar Supabase por proposal_id:', error.message);
+            }
+          } else {
+            console.log('ℹ️ proposal_id não encontrado, atualização no Supabase será feita via pagarme_order_id');
+          }
         }
       }
 
@@ -481,6 +559,25 @@ class PaymentController {
         if (payment) {
           await PaymentModel.updateStatus(payment.id, 'refunded', chargeData);
           console.log(`💰 Pagamento ${payment.id} atualizado para REFUNDED`);
+
+          // Atualizar no Supabase usando proposal_id se disponível
+          const proposalId = payment.proposal_id || chargeData.metadata?.proposal_id || chargeData.order?.metadata?.proposal_id;
+          
+          if (proposalId) {
+            try {
+              const SupabaseService = require('../services/supabase.service');
+              await SupabaseService.updatePaymentStatusByProposalId(
+                proposalId,
+                'refunded',
+                chargeData
+              );
+              console.log(`✅ Status atualizado no Supabase via proposal_id: ${proposalId}`);
+            } catch (error) {
+              console.error('⚠️ Erro ao atualizar Supabase por proposal_id:', error.message);
+            }
+          } else {
+            console.log('ℹ️ proposal_id não encontrado, atualização no Supabase será feita via pagarme_order_id');
+          }
         }
       }
 
