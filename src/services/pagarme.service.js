@@ -216,6 +216,274 @@ class PagarmeService {
     // Implementação futura para validação de webhooks
     return true;
   }
+
+  /**
+   * Criar cliente na Pagar.me
+   */
+  async createCustomer(customerData) {
+    try {
+      const {
+        name,
+        email,
+        document,
+        type = 'individual',
+        phone_numbers
+      } = customerData;
+
+      const payload = {
+        name,
+        email,
+        document,
+        type
+      };
+
+      if (phone_numbers && phone_numbers.length > 0) {
+        payload.phones = {
+          mobile_phone: phone_numbers[0]
+        };
+      }
+
+      const response = await this.client.post('/customers', payload);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Erro ao criar cliente: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
+   * Criar recebedor na Pagar.me
+   */
+  async createRecipient(recipientData) {
+    try {
+      console.log('🔧 Pagar.me Service - createRecipient');
+      console.log('📥 Dados recebidos:', JSON.stringify(recipientData, null, 2));
+
+      const {
+        name,
+        email,
+        document,
+        type = 'individual',
+        bank_account
+      } = recipientData;
+
+      console.log('📋 Dados extraídos:');
+      console.log('   - Nome:', name);
+      console.log('   - Email:', email);
+      console.log('   - Documento:', document);
+      console.log('   - Tipo:', type);
+      console.log('   - Conta Bancária:', JSON.stringify(bank_account, null, 2));
+
+      // Montar payload no formato correto da Pagar.me
+      const payload = {
+        name,
+        email,
+        document,
+        type
+      };
+
+      // Adicionar conta bancária no formato correto
+      if (bank_account) {
+        payload.default_bank_account = {
+          holder_name: bank_account.holder_name,
+          holder_type: bank_account.holder_type,
+          holder_document: bank_account.holder_document,
+          bank: bank_account.bank,
+          account_number: bank_account.account_number,
+          account_type: bank_account.account_type,
+          branch_number: bank_account.branch_number
+        };
+      }
+
+      console.log('📤 Payload para Pagar.me:', JSON.stringify(payload, null, 2));
+      console.log('🔄 Enviando requisição POST /recipients...');
+
+      const response = await this.client.post('/recipients', payload);
+      
+      console.log('✅ Resposta da Pagar.me recebida');
+      console.log('📊 Status:', response.status);
+      console.log('📊 ID do recebedor:', response.data.id);
+      console.log('📊 Resposta completa:', JSON.stringify(response.data, null, 2));
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro no Pagar.me Service - createRecipient');
+      console.error('❌ Erro completo:', error);
+      if (error.response) {
+        console.error('❌ Status HTTP:', error.response.status);
+        console.error('❌ URL:', error.config?.url);
+        
+        // Tentar parsear o payload enviado
+        try {
+          const sentPayload = error.config?.data ? JSON.parse(error.config.data) : {};
+          console.error('❌ Payload enviado:', JSON.stringify(sentPayload, null, 2));
+        } catch (e) {
+          console.error('❌ Payload enviado (raw):', error.config?.data);
+        }
+        
+        console.error('❌ Dados do erro:', JSON.stringify(error.response.data, null, 2));
+        
+        // Mostrar erros de validação se existirem
+        if (error.response.data?.errors) {
+          console.error('❌ Erros de validação:');
+          
+          // Verificar se é array
+          if (Array.isArray(error.response.data.errors)) {
+            error.response.data.errors.forEach((err, index) => {
+              console.error(`   ${index + 1}. Campo: ${err.field || err.parameter || 'N/A'}`);
+              console.error(`      Mensagem: ${err.message || 'N/A'}`);
+            });
+          } else if (typeof error.response.data.errors === 'object') {
+            // Se for objeto, iterar pelas chaves
+            Object.keys(error.response.data.errors).forEach((key, index) => {
+              const err = error.response.data.errors[key];
+              console.error(`   ${index + 1}. Campo: ${key}`);
+              if (Array.isArray(err)) {
+                err.forEach((msg, i) => {
+                  console.error(`      Mensagem ${i + 1}: ${msg}`);
+                });
+              } else {
+                console.error(`      Mensagem: ${err}`);
+              }
+            });
+          } else {
+            console.error('   Erros:', error.response.data.errors);
+          }
+        }
+      }
+      
+      // Extrair mensagem de erro de forma segura
+      let errorMessage = error.message;
+      if (error.response?.data) {
+        if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.errors) {
+          if (Array.isArray(error.response.data.errors) && error.response.data.errors.length > 0) {
+            errorMessage = error.response.data.errors[0].message || error.response.data.errors[0];
+          } else if (typeof error.response.data.errors === 'object') {
+            const firstKey = Object.keys(error.response.data.errors)[0];
+            const firstError = error.response.data.errors[firstKey];
+            errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+          }
+        }
+      }
+      
+      throw new Error(`Erro ao criar recebedor: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Criar transferência na Pagar.me
+   */
+  async createTransfer(transferData) {
+    try {
+      const {
+        recipient_id,
+        amount,
+        order_id,
+        metadata = {}
+      } = transferData;
+
+      const payload = {
+        amount,
+        recipient_id
+      };
+
+      // Adicionar order_id ao metadata se fornecido
+      if (order_id) {
+        payload.metadata = {
+          ...metadata,
+          order_id
+        };
+      } else if (Object.keys(metadata).length > 0) {
+        payload.metadata = metadata;
+      }
+
+      const response = await this.client.post('/transfers', payload);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Erro ao criar transferência: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
+   * Obter cliente por ID
+   */
+  async getCustomer(customerId) {
+    try {
+      const response = await this.client.get(`/customers/${customerId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Erro ao obter cliente: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
+   * Obter recebedor por ID
+   */
+  async getRecipient(recipientId) {
+    try {
+      console.log('🔧 Pagar.me Service - getRecipient');
+      console.log('📌 ID do recebedor:', recipientId);
+      console.log('🔄 Enviando requisição GET /recipients/' + recipientId + '...');
+
+      const response = await this.client.get(`/recipients/${recipientId}`);
+      
+      console.log('✅ Resposta da Pagar.me recebida');
+      console.log('📊 Status:', response.status);
+      console.log('📊 Dados do recebedor:', JSON.stringify(response.data, null, 2));
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro no Pagar.me Service - getRecipient');
+      console.error('❌ ID solicitado:', recipientId);
+      console.error('❌ Erro completo:', error);
+      if (error.response) {
+        console.error('❌ Status HTTP:', error.response.status);
+        console.error('❌ Dados do erro:', JSON.stringify(error.response.data, null, 2));
+        
+        // Mostrar erros de validação se existirem
+        if (error.response.data?.errors) {
+          console.error('❌ Erros de validação:');
+          if (Array.isArray(error.response.data.errors)) {
+            error.response.data.errors.forEach((err, index) => {
+              console.error(`   ${index + 1}. Campo: ${err.field || err.parameter || 'N/A'}`);
+              console.error(`      Mensagem: ${err.message || 'N/A'}`);
+            });
+          } else if (typeof error.response.data.errors === 'object') {
+            Object.keys(error.response.data.errors).forEach((key, index) => {
+              const err = error.response.data.errors[key];
+              console.error(`   ${index + 1}. Campo: ${key}`);
+              if (Array.isArray(err)) {
+                err.forEach((msg, i) => {
+                  console.error(`      Mensagem ${i + 1}: ${msg}`);
+                });
+              } else {
+                console.error(`      Mensagem: ${err}`);
+              }
+            });
+          }
+        }
+      }
+      
+      // Extrair mensagem de erro de forma segura
+      let errorMessage = error.message;
+      if (error.response?.data) {
+        if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.errors) {
+          if (Array.isArray(error.response.data.errors) && error.response.data.errors.length > 0) {
+            errorMessage = error.response.data.errors[0].message || error.response.data.errors[0];
+          } else if (typeof error.response.data.errors === 'object') {
+            const firstKey = Object.keys(error.response.data.errors)[0];
+            const firstError = error.response.data.errors[firstKey];
+            errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+          }
+        }
+      }
+      
+      throw new Error(`Erro ao obter recebedor: ${errorMessage}`);
+    }
+  }
 }
 
 module.exports = new PagarmeService();

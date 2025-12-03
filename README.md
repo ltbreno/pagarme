@@ -108,11 +108,106 @@ Cria um novo pagamento com PIX.
 }
 ```
 
+### Criar Cliente
+
+**POST** `/api/customers`
+
+Cria um novo cliente na Pagar.me.
+
+**Body:**
+```json
+{
+  "name": "João Silva",
+  "email": "joao@email.com",
+  "document": "12345678901",
+  "type": "individual",
+  "phone_numbers": [{
+    "country_code": "55",
+    "area_code": "11",
+    "number": "999999999"
+  }]
+}
+```
+
+**Resposta:**
+```json
+{
+  "success": true,
+  "message": "Cliente criado com sucesso",
+  "data": {
+    "pagarme_customer_id": "cus_xxxxxxxxxxxxx"
+  }
+}
+```
+
+### Criar Recebedor
+
+**POST** `/api/recipients`
+
+Cria um novo recebedor na Pagar.me (para split de pagamento).
+
+**Body:**
+```json
+{
+  "name": "Maria Santos",
+  "email": "maria@email.com",
+  "document": "12345678901",
+  "bank_account": {
+    "holder_name": "Maria Santos",
+    "holder_type": "individual",
+    "holder_document": "12345678901",
+    "bank": "341",
+    "account_number": "12345",
+    "account_type": "checking",
+    "branch_number": "1234"
+  }
+}
+```
+
+**Resposta:**
+```json
+{
+  "success": true,
+  "message": "Recebedor criado com sucesso",
+  "data": {
+    "pagarme_recipient_id": "rp_xxxxxxxxxxxxx"
+  }
+}
+```
+
+### Criar Transferência
+
+**POST** `/api/transfers`
+
+Cria uma transferência para um recebedor.
+
+**Body:**
+```json
+{
+  "recipient_id": "rp_xxxxxxxxxxxxx",
+  "amount": 10000,
+  "order_id": "or_xxxxxxxxxxxxx"
+}
+```
+
+**Resposta:**
+```json
+{
+  "success": true,
+  "message": "Transferência criada com sucesso",
+  "data": {
+    "transfer_id": "trf_xxxxxxxxxxxxx"
+  }
+}
+```
+
 ### Outros Endpoints
 
 - **GET** `/api/payments/:id` - Obter pagamento por ID
 - **GET** `/api/payments` - Listar pagamentos (com filtros opcionais)
 - **GET** `/api/payments/stats/summary` - Estatísticas de pagamentos
+- **GET** `/api/customers/:id` - Obter cliente por ID
+- **GET** `/api/recipients/:id` - Obter recebedor por ID
 - **POST** `/api/payments/card-token` - Criar token de cartão (teste - só para desenvolvimento)
 - **POST** `/api/payments/tokens` - Receber token criado no frontend
 - **POST** `/api/payments/validate-token` - Validar token de cartão

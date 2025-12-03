@@ -235,10 +235,105 @@ const validate = (schema) => {
   };
 };
 
+// Schema de validação para criar cliente
+const customerSchema = Joi.object({
+  name: Joi.string().min(2).max(255).required()
+    .messages({
+      'string.min': 'O nome deve ter pelo menos 2 caracteres',
+      'string.max': 'O nome deve ter no máximo 255 caracteres',
+      'any.required': 'O nome é obrigatório'
+    }),
+
+  email: Joi.string().email().required()
+    .messages({
+      'string.email': 'E-mail inválido',
+      'any.required': 'O e-mail é obrigatório'
+    }),
+
+  document: Joi.string().pattern(/^\d{11}|\d{14}$/).required()
+    .messages({
+      'string.pattern.base': 'CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos',
+      'any.required': 'O documento (CPF/CNPJ) é obrigatório'
+    }),
+
+  type: Joi.string().valid('individual', 'company').default('individual')
+    .messages({
+      'any.only': 'Tipo deve ser "individual" ou "company"'
+    }),
+
+  phone_numbers: Joi.array().items(
+    Joi.object({
+      country_code: Joi.string().default('55'),
+      area_code: Joi.string().pattern(/^\d{2}$/).required(),
+      number: Joi.string().pattern(/^\d{8,9}$/).required()
+    })
+  ).optional()
+});
+
+// Schema de validação para criar recebedor
+const recipientSchema = Joi.object({
+  name: Joi.string().min(2).max(255).required()
+    .messages({
+      'string.min': 'O nome deve ter pelo menos 2 caracteres',
+      'string.max': 'O nome deve ter no máximo 255 caracteres',
+      'any.required': 'O nome é obrigatório'
+    }),
+
+  email: Joi.string().email().required()
+    .messages({
+      'string.email': 'E-mail inválido',
+      'any.required': 'O e-mail é obrigatório'
+    }),
+
+  document: Joi.string().pattern(/^\d{11}|\d{14}$/).required()
+    .messages({
+      'string.pattern.base': 'CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos',
+      'any.required': 'O documento (CPF/CNPJ) é obrigatório'
+    }),
+
+  bank_account: Joi.object({
+    holder_name: Joi.string().required(),
+    holder_type: Joi.string().valid('individual', 'company').required(),
+    holder_document: Joi.string().pattern(/^\d{11}|\d{14}$/).required(),
+    bank: Joi.string().required(),
+    account_number: Joi.string().required(),
+    account_type: Joi.string().valid('checking', 'savings').required(),
+    branch_number: Joi.string().required()
+  }).required()
+    .messages({
+      'any.required': 'Conta bancária é obrigatória'
+    })
+});
+
+// Schema de validação para criar transferência
+const transferSchema = Joi.object({
+  recipient_id: Joi.string().required()
+    .messages({
+      'any.required': 'ID do recebedor é obrigatório'
+    }),
+
+  amount: Joi.number().integer().min(100).max(100000000).required()
+    .messages({
+      'number.min': 'O valor deve ser no mínimo R$ 1,00',
+      'number.max': 'O valor deve ser no máximo R$ 1.000.000,00',
+      'any.required': 'O valor é obrigatório'
+    }),
+
+  order_id: Joi.string().optional()
+    .messages({
+      'string.base': 'ID do pedido deve ser uma string'
+    }),
+
+  metadata: Joi.object().optional()
+});
+
 module.exports = {
   validateCreditCardPayment: validate(creditCardPaymentSchema),
   validatePixPayment: validate(pixPaymentSchema),
   validateCardToken: validate(cardTokenSchema),
   validatePagarmeToken: validate(pagarmeTokenSchema),
+  validateCustomer: validate(customerSchema),
+  validateRecipient: validate(recipientSchema),
+  validateTransfer: validate(transferSchema),
   validate
 };
