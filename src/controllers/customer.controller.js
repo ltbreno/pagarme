@@ -14,17 +14,22 @@ class CustomerController {
 
       res.status(201).json({
         success: true,
-        message: 'Cliente criado com sucesso',
         data: {
-          pagarme_customer_id: pagarmeCustomer.id
+          pagarme_customer_id: pagarmeCustomer.id,
+          name: pagarmeCustomer.name,
+          email: pagarmeCustomer.email,
+          document: pagarmeCustomer.document,
+          type: pagarmeCustomer.type,
+          created_at: pagarmeCustomer.created_at
         }
       });
     } catch (error) {
       console.error('Erro ao criar cliente:', error);
+
       res.status(500).json({
         success: false,
-        error: 'Erro interno do servidor',
-        message: error.message
+        error: error.message || 'Erro interno do servidor',
+        details: error.response?.errors || null
       });
     }
   }
@@ -54,4 +59,3 @@ class CustomerController {
 }
 
 module.exports = new CustomerController();
-

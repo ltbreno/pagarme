@@ -115,7 +115,7 @@ class PagarmeService {
       };
 
       const response = await this.client.post('/orders', payload);
-      
+
       // Log detalhado da resposta
       console.log('✅ PIX Order criado:', response.data.id);
       console.log('📊 Status:', response.data.status);
@@ -123,7 +123,7 @@ class PagarmeService {
         console.log('💳 Charge Status:', response.data.charges[0].status);
         console.log('💳 Charge Gateway Response:', response.data.charges[0].gateway_response);
       }
-      
+
       return response.data;
     } catch (error) {
       console.error('❌ Erro detalhado PIX:', error.response?.data);
@@ -225,27 +225,83 @@ class PagarmeService {
       const {
         name,
         email,
+        code,
         document,
         type = 'individual',
-        phone_numbers
+        document_type = 'CPF',
+        gender,
+        birthdate,
+        address,
+        phones,
+        metadata
       } = customerData;
 
+      // Limpar documento (apenas números)
+      const cleanDocument = document.replace(/\D/g, '');
+
+      // Montar payload base
       const payload = {
         name,
         email,
-        document,
-        type
+        document: cleanDocument,
+        type,
+        document_type
       };
 
-      if (phone_numbers && phone_numbers.length > 0) {
-        payload.phones = {
-          mobile_phone: phone_numbers[0]
+      // Adicionar campos opcionais
+      if (code) payload.code = code;
+      if (gender) payload.gender = gender;
+
+      // Formatar data de nascimento (DD/MM/YYYY -> MM/DD/YYYY)
+      if (birthdate) {
+        const [day, month, year] = birthdate.split('/');
+        payload.birthdate = `${month}/${day}/${year}`;
+      }
+
+      if (metadata) payload.metadata = metadata;
+
+      // Formatar endereço se fornecido
+      if (address) {
+        payload.address = {
+          line_1: address.line_1,
+          line_2: address.line_2 || '',
+          zip_code: address.zip_code.replace(/\D/g, ''),
+          city: address.city,
+          state: address.state,
+          country: address.country || 'BR'
         };
       }
 
+      // Formatar telefones se fornecidos
+      if (phones) {
+        payload.phones = {};
+
+        if (phones.mobile_phone) {
+          payload.phones.mobile_phone = {
+            country_code: phones.mobile_phone.country_code || '55',
+            area_code: phones.mobile_phone.area_code,
+            number: phones.mobile_phone.number.replace(/\D/g, '')
+          };
+        }
+
+        if (phones.home_phone) {
+          payload.phones.home_phone = {
+            country_code: phones.home_phone.country_code || '55',
+            area_code: phones.home_phone.area_code,
+            number: phones.home_phone.number.replace(/\D/g, '')
+          };
+        }
+      }
+
+      console.log('📤 Criando customer na Pagar.me:', JSON.stringify(payload, null, 2));
+
       const response = await this.client.post('/customers', payload);
+
+      console.log('✅ Customer criado:', response.data.id);
+
       return response.data;
     } catch (error) {
+      console.error('❌ Erro ao criar customer:', error.response?.data || error.message);
       throw new Error(`Erro ao criar cliente: ${error.response?.data?.message || error.message}`);
     }
   }
@@ -298,7 +354,7 @@ class PagarmeService {
       console.log('🔄 Enviando requisição POST /recipients...');
 
       const response = await this.client.post('/recipients', payload);
-      
+
       console.log('✅ Resposta da Pagar.me recebida');
       console.log('📊 Status:', response.status);
       console.log('📊 ID do recebedor:', response.data.id);
@@ -311,7 +367,7 @@ class PagarmeService {
       if (error.response) {
         console.error('❌ Status HTTP:', error.response.status);
         console.error('❌ URL:', error.config?.url);
-        
+
         // Tentar parsear o payload enviado
         try {
           const sentPayload = error.config?.data ? JSON.parse(error.config.data) : {};
@@ -319,13 +375,13 @@ class PagarmeService {
         } catch (e) {
           console.error('❌ Payload enviado (raw):', error.config?.data);
         }
-        
+
         console.error('❌ Dados do erro:', JSON.stringify(error.response.data, null, 2));
-        
+
         // Mostrar erros de validação se existirem
         if (error.response.data?.errors) {
           console.error('❌ Erros de validação:');
-          
+
           // Verificar se é array
           if (Array.isArray(error.response.data.errors)) {
             error.response.data.errors.forEach((err, index) => {
@@ -350,7 +406,7 @@ class PagarmeService {
           }
         }
       }
-      
+
       // Extrair mensagem de erro de forma segura
       let errorMessage = error.message;
       if (error.response?.data) {
@@ -366,7 +422,7 @@ class PagarmeService {
           }
         }
       }
-      
+
       throw new Error(`Erro ao criar recebedor: ${errorMessage}`);
     }
   }
@@ -427,7 +483,7 @@ class PagarmeService {
       console.log('🔄 Enviando requisição GET /recipients/' + recipientId + '...');
 
       const response = await this.client.get(`/recipients/${recipientId}`);
-      
+
       console.log('✅ Resposta da Pagar.me recebida');
       console.log('📊 Status:', response.status);
       console.log('📊 Dados do recebedor:', JSON.stringify(response.data, null, 2));
@@ -440,7 +496,7 @@ class PagarmeService {
       if (error.response) {
         console.error('❌ Status HTTP:', error.response.status);
         console.error('❌ Dados do erro:', JSON.stringify(error.response.data, null, 2));
-        
+
         // Mostrar erros de validação se existirem
         if (error.response.data?.errors) {
           console.error('❌ Erros de validação:');
@@ -464,7 +520,7 @@ class PagarmeService {
           }
         }
       }
-      
+
       // Extrair mensagem de erro de forma segura
       let errorMessage = error.message;
       if (error.response?.data) {
@@ -480,7 +536,7 @@ class PagarmeService {
           }
         }
       }
-      
+
       throw new Error(`Erro ao obter recebedor: ${errorMessage}`);
     }
   }

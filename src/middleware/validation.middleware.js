@@ -245,7 +245,7 @@ const validate = (schema) => {
   };
 };
 
-// Schema de validação para criar cliente
+// Schema de validação para criar cliente (Pagar.me v5)
 const customerSchema = Joi.object({
   name: Joi.string().min(2).max(255).required()
     .messages({
@@ -260,6 +260,11 @@ const customerSchema = Joi.object({
       'any.required': 'O e-mail é obrigatório'
     }),
 
+  code: Joi.string().max(52).optional()
+    .messages({
+      'string.max': 'O código deve ter no máximo 52 caracteres'
+    }),
+
   document: Joi.string().pattern(/^\d{11}|\d{14}$/).required()
     .messages({
       'string.pattern.base': 'CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos',
@@ -271,13 +276,71 @@ const customerSchema = Joi.object({
       'any.only': 'Tipo deve ser "individual" ou "company"'
     }),
 
-  phone_numbers: Joi.array().items(
-    Joi.object({
+  document_type: Joi.string().valid('CPF', 'CNPJ', 'PASSPORT').default('CPF')
+    .messages({
+      'any.only': 'Tipo de documento deve ser "CPF", "CNPJ" ou "PASSPORT"'
+    }),
+
+  gender: Joi.string().valid('male', 'female').optional()
+    .messages({
+      'any.only': 'Gênero deve ser "male" ou "female"'
+    }),
+
+  birthdate: Joi.string().pattern(/^\d{2}\/\d{2}\/\d{4}$/).optional()
+    .messages({
+      'string.pattern.base': 'Data de nascimento deve estar no formato DD/MM/AAAA'
+    }),
+
+  address: Joi.object({
+    line_1: Joi.string().max(256).required()
+      .messages({
+        'any.required': 'Endereço linha 1 é obrigatório',
+        'string.max': 'Endereço linha 1 deve ter no máximo 256 caracteres'
+      }),
+    line_2: Joi.string().max(256).optional(),
+    zip_code: Joi.string().pattern(/^\d{8}$/).required()
+      .messages({
+        'string.pattern.base': 'CEP deve ter 8 dígitos',
+        'any.required': 'CEP é obrigatório'
+      }),
+    city: Joi.string().max(64).required()
+      .messages({
+        'any.required': 'Cidade é obrigatória'
+      }),
+    state: Joi.string().length(2).required()
+      .messages({
+        'string.length': 'Estado deve ter 2 caracteres',
+        'any.required': 'Estado é obrigatório'
+      }),
+    country: Joi.string().length(2).default('BR')
+  }).optional(),
+
+  phones: Joi.object({
+    home_phone: Joi.object({
       country_code: Joi.string().default('55'),
-      area_code: Joi.string().pattern(/^\d{2}$/).required(),
+      area_code: Joi.string().pattern(/^\d{2}$/).required()
+        .messages({
+          'string.pattern.base': 'DDD deve ter 2 dígitos'
+        }),
       number: Joi.string().pattern(/^\d{8,9}$/).required()
-    })
-  ).optional()
+        .messages({
+          'string.pattern.base': 'Telefone deve ter 8 ou 9 dígitos'
+        })
+    }).optional(),
+    mobile_phone: Joi.object({
+      country_code: Joi.string().default('55'),
+      area_code: Joi.string().pattern(/^\d{2}$/).required()
+        .messages({
+          'string.pattern.base': 'DDD deve ter 2 dígitos'
+        }),
+      number: Joi.string().pattern(/^\d{8,9}$/).required()
+        .messages({
+          'string.pattern.base': 'Telefone deve ter 8 ou 9 dígitos'
+        })
+    }).optional()
+  }).optional(),
+
+  metadata: Joi.object().optional()
 });
 
 // Schema de validação para criar recebedor
