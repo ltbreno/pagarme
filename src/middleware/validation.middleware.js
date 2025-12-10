@@ -9,9 +9,11 @@ const creditCardPaymentSchema = Joi.object({
       'any.required': 'O valor é obrigatório'
     }),
 
-  card_token: Joi.string().required()
+  card_token: Joi.string().optional(),
+  
+  card_id: Joi.string().optional()
     .messages({
-      'any.required': 'O token do cartão é obrigatório'
+      'string.base': 'ID do cartão inválido'
     }),
 
   installments: Joi.number().integer().min(1).max(12).default(1)
@@ -48,7 +50,10 @@ const creditCardPaymentSchema = Joi.object({
     .messages({
       'string.uuid': 'proposal_id deve ser um UUID válido'
     })
-});
+}).or('card_token', 'card_id')
+  .messages({
+    'object.missing': 'É necessário fornecer card_token ou card_id'
+  });
 
 // Schema de validação para pagamento PIX
 const pixPaymentSchema = Joi.object({

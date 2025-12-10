@@ -38,12 +38,23 @@ class PagarmeService {
       const {
         amount,
         card_token,
+        card_id,
         installments = 1,
         customer_name,
         customer_email,
         customer_document,
         description
       } = paymentData;
+
+      const creditCardData = {
+        installments: installments
+      };
+
+      if (card_token) {
+        creditCardData.card_token = card_token;
+      } else if (card_id) {
+        creditCardData.card_id = card_id;
+      }
 
       const payload = {
         items: [{
@@ -59,10 +70,7 @@ class PagarmeService {
         },
         payments: [{
           payment_method: 'credit_card',
-          credit_card: {
-            card_token: card_token,
-            installments: installments
-          }
+          credit_card: creditCardData
         }]
       };
 
