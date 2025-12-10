@@ -8,6 +8,7 @@ const paymentRoutes = require('./routes/payment.routes');
 const customerRoutes = require('./routes/customer.routes');
 const recipientRoutes = require('./routes/recipient.routes');
 const transferRoutes = require('./routes/transfer.routes');
+const cardRoutes = require('./routes/card.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/recipients', recipientRoutes);
 app.use('/api/transfers', transferRoutes);
+app.use('/api/cards', cardRoutes);
 
 // Rota de saúde
 app.get('/health', (req, res) => {

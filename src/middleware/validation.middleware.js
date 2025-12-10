@@ -225,9 +225,14 @@ const pagarmeTokenSchema = Joi.object({
 // Middleware para validar dados
 const validate = (schema) => {
   return (req, res, next) => {
+    console.log(`🔍 [Middleware] Validando ${req.method} ${req.originalUrl}`);
+    console.log('📥 [Middleware] Body:', JSON.stringify(req.body, null, 2));
+
     const { error, value } = schema.validate(req.body, { abortEarly: false });
 
     if (error) {
+      console.error('❌ [Middleware] Erro de validação:', JSON.stringify(error.details.map(d => d.message), null, 2));
+      
       const errors = error.details.map(detail => ({
         field: detail.path.join('.'),
         message: detail.message
@@ -400,6 +405,33 @@ const transferSchema = Joi.object({
   metadata: Joi.object().optional()
 });
 
+// Schema de validação para criar cartão
+const createCardSchema = Joi.object({
+  customer_id: Joi.string().required()
+    .messages({
+      'any.required': 'ID do cliente é obrigatório'
+    }),
+
+  card_token: Joi.string().optional(),
+
+  number: Joi.string().pattern(/^\d{13,19}$/).optional(),
+  holder_name: Joi.string().optional(),
+  exp_month: Joi.number().integer().min(1).max(12).optional(),
+  exp_year: Joi.number().integer().optional(),
+  cvv: Joi.string().pattern(/^\d{3,4}$/).optional(),
+
+  billing_address: Joi.object({
+    line_1: Joi.string().required(),
+    zip_code: Joi.string().pattern(/^\d{8}$/).required(),
+    city: Joi.string().required(),
+    state: Joi.string().length(2).required(),
+    country: Joi.string().default('BR')
+  }).optional()
+}).or('card_token', 'number') // Deve ter token OU número
+  .messages({
+    'object.missing': 'É necessário fornecer card_token OU dados do cartão (number, etc)'
+  });
+
 module.exports = {
   validateCreditCardPayment: validate(creditCardPaymentSchema),
   validatePixPayment: validate(pixPaymentSchema),
@@ -408,5 +440,6 @@ module.exports = {
   validateCustomer: validate(customerSchema),
   validateRecipient: validate(recipientSchema),
   validateTransfer: validate(transferSchema),
+  validateCreateCard: validate(createCardSchema),
   validate
 };

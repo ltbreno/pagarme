@@ -540,6 +540,77 @@ class PagarmeService {
       throw new Error(`Erro ao obter recebedor: ${errorMessage}`);
     }
   }
+
+  /**
+   * Criar cartão para cliente
+   */
+  async createCard(customerId, cardData) {
+    try {
+      console.log('🔧 Pagar.me Service - createCard');
+      console.log('📌 Customer ID:', customerId);
+
+      const payload = {};
+
+      // Se tiver token, usa ele
+      if (cardData.card_token) {
+        payload.card = cardData.card_token;
+      } else if (typeof cardData === 'string') {
+        // Suporte para passar apenas a string do token
+        payload.card = cardData;
+      } else {
+        // Fallback para dados raw (se suportado/necessário)
+        const {
+          number,
+          holder_name,
+          exp_month,
+          exp_year,
+          cvv
+        } = cardData;
+
+        if (number && holder_name) {
+          payload.number = number;
+          payload.holder_name = holder_name;
+          payload.exp_month = exp_month;
+          payload.exp_year = exp_year;
+          payload.cvv = cvv;
+        }
+      }
+
+      if (cardData.billing_address) {
+        payload.billing_address = cardData.billing_address;
+      }
+
+      console.log('📤 Payload para Pagar.me (Card):', JSON.stringify(payload, null, 2));
+
+      const response = await this.client.post(`/customers/${customerId}/cards`, payload);
+
+      console.log('✅ Cartão criado:', response.data.id);
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao criar cartão:', error.response?.data || error.message);
+      throw new Error(`Erro ao criar cartão: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
+   * Listar cartões de um cliente
+   */
+  async getCards(customerId) {
+    try {
+      console.log('🔧 Pagar.me Service - getCards');
+      console.log('📌 Customer ID:', customerId);
+
+      const response = await this.client.get(`/customers/${customerId}/cards`);
+
+      console.log('✅ Cartões listados:', response.data.data?.length || 0);
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao listar cartões:', error.response?.data || error.message);
+      throw new Error(`Erro ao listar cartões: ${error.response?.data?.message || error.message}`);
+    }
+  }
 }
 
 module.exports = new PagarmeService();
